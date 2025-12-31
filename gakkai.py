@@ -6,6 +6,17 @@ import re
 # ページ設定
 st.set_page_config(page_title="放射線技師 学会・研究会DB", layout="wide")
 
+# --- 【追加】右上のメニューやヘッダーを隠すCSS ---
+hide_menu_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """
+st.markdown(hide_menu_style, unsafe_allow_html=True)
+
+
 # --- 【追加】簡易パスワード認証機能 ---
 def check_password():
     """パスワード認証を行う関数"""
@@ -161,4 +172,5 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
+
 
