@@ -8,48 +8,33 @@ st.set_page_config(page_title="放射線技師 学会・研究会DB", layout="wi
 
 # --- 関数: 日付のクリーニング処理 ---
 def clean_date(date_val):
-    """
-    あらゆる形式の日付文字列から、YYYY-MM-DD (datetime型) を抽出する関数
-    """
     if pd.isna(date_val):
         return pd.NaT
-    
     text = str(date_val)
-    # 1. あらゆる種類の「横棒」や「波線」を、普通の半角ハイフン「-」に統一
     text = re.sub(r'[~〜\u2010-\u2015\u2212ー−]', '-', text)
-    # 2. 統一したハイフンで分割し、最初の部分（開始日）だけ取る
     text = text.split('-')[0]
-    # 3. 日本語の「年」「月」をスラッシュに、「日」を削除
     text = text.replace('年', '/').replace('月', '/').replace('日', '')
-    # 4. 余計な空白を削除
     text = text.strip()
-    
     try:
         return pd.to_datetime(text)
     except:
         return pd.NaT
 
-# --- 1. データ読み込み (Googleスプレッドシートから) ---
-# 金庫から取り出す
-csv_url = st.secrets["csv_url"]
-
+# --- 1. データ読み込み ---
 try:
-    # URLから直接データを読み込む
+    # Secrets(金庫)からURLを取得
+    csv_url = st.secrets["csv_url"]
+    
+    # データを読み込む
     df = pd.read_csv(csv_url)
 
     # --- データの加工 ---
     
-    # 日付変換（強化版）
+    # 日付変換
     df["開催日"] = df["開催日"].apply(clean_date)
-    
-    # 日付変換に失敗した行（NaT）があるかチェック
-    failed_rows = df[df["開催日"].isna()]
-    if not failed_rows.empty:
-        st.toast(f"⚠️ {len(failed_rows)} 件の日付が読み込めませんでした（スプレッドシートを確認してください）", icon="⚠️")
-        df = df.dropna(subset=["開催日"])
+    df = df.dropna(subset=["開催日"]) # 日付がないものは除外
 
-    # モダリティのリスト化処理
-    # スプレッドシートだと勝手に数値になったりするので文字列に変換してから処理
+    # モダリティのリスト化
     df["モダリティ"] = df["モダリティ"].fillna("").astype(str).apply(
         lambda x: x.replace("、", ",").replace('"', '').split(",")
     )
@@ -77,18 +62,14 @@ show_past = st.sidebar.checkbox("終了した学会も表示する", value=False
 
 
 # --- 3. データの絞り込み ---
-# 地域
 filtered_df = df[df["地域"].isin(selected_regions)]
 
-# モダリティ
 if selected_modalities:
     filtered_df = filtered_df[filtered_df["モダリティ"].apply(lambda x: not set(x).isdisjoint(set(selected_modalities)))]
 
-# 日付
 if not show_past:
     filtered_df = filtered_df[filtered_df["開催日"] >= pd.to_datetime(today.date())]
 
-# ソート
 filtered_df = filtered_df.sort_values("開催日")
 
 
@@ -96,9 +77,12 @@ filtered_df = filtered_df.sort_values("開催日")
 st.title("🏥 診療放射線技師向け 学会・研究会情報")
 st.caption(f"最終更新: {today.strftime('%Y/%m/%d %H:%M')}")
 
-# 金庫(secrets)から取り出す
-edit_url = st.secrets["edit_url"]
-st.markdown(f"データの修正・追加は[こちらのスプレッドシート]({edit_url})からお願いします。")
+# 編集用URLもSecretsから取得
+try:
+    edit_url = st.secrets["edit_url"]
+    st.markdown(f"データの修正・追加は[こちらのスプレッドシート]({edit_url})からお願いします。")
+except:
+    st.warning("Secretsに edit_url が設定されていません。")
 
 st.info(f"検索結果: {len(filtered_df)} 件")
 
@@ -111,21 +95,37 @@ else:
             col1, col2 = st.columns([3, 1])
             
             with col1:
-                # 日付表示
+                # 日付と学会名
                 date_str = row['開催日'].strftime('%Y/%m/%d')
                 st.subheader(f"📅 {date_str} | {row['学会名']}")
                 st.caption(f"📍 {row['地域']} ({row['都道府県']})")
                 
-                # モダリティバッジ
-                modality_html = ""
+                # バッジ表示用のHTML作成
+                badges_html = ""
+                
+                # 1. モダリティ (水色)
                 for mod in row["モダリティ"]:
-                    modality_html += f"<span style='background-color:#e0f7fa; color:#006064; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px;'>{mod}</span>"
-                st.markdown(modality_html, unsafe_allow_html=True)
+                    badges_html += f"<span style='background-color:#e0f7fa; color:#006064; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px;'>{mod}</span>"
+                
+                # 2. 専門ポイント (黄色/オレンジ) - G列
+                # 列が存在し、かつデータが入っている場合のみ表示
+                if "専門ポイントの有無" in df.columns:
+                    point_val = row["専門ポイントの有無"]
+                    if pd.notna(point_val) and str(point_val).strip() != "":
+                        badges_html += f"<span style='background-color:#fff9c4; color:#f57f17; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px; font-weight:bold;'>★ {point_val}</span>"
+
+                # 3. ハイブリッド開催 (紫) - H列
+                if "ハイブリッド開催の有無" in df.columns:
+                    hybrid_val = row["ハイブリッド開催の有無"]
+                    if pd.notna(hybrid_val) and str(hybrid_val).strip() != "":
+                        badges_html += f"<span style='background-color:#f3e5f5; color:#7b1fa2; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px;'>📶 {hybrid_val}</span>"
+
+                # HTMLを表示
+                st.markdown(badges_html, unsafe_allow_html=True)
                 
             with col2:
                 st.write("")
                 st.write("")
-                # URLがある場合のみボタンを表示
                 url = str(row["URL"])
                 if url and url.lower() != "nan" and url != "":
                     st.link_button("公式サイトへ", url)
@@ -133,8 +133,3 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
-
-
-
-
-
