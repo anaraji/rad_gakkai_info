@@ -6,12 +6,39 @@ import re
 # ページ設定
 st.set_page_config(page_title="放射線技師 学会・研究会DB", layout="wide")
 
-# --- 【追加】右上のメニューやヘッダーを隠すCSS ---
+# --- 【修正版】右上のメニューやヘッダーを強力に隠すCSS ---
 hide_menu_style = """
     <style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* 1. ヘッダー全体（ハンバーガーメニュー、GitHubアイコン含む）を隠す */
+    [data-testid="stHeader"] {
+        display: none;
+    }
+    
+    /* 2. もし上記で消えない場合の予備（ツールバー単体） */
+    [data-testid="stToolbar"] {
+        visibility: hidden;
+        height: 0%;
+        position: fixed;
+    }
+    
+    /* 3. フッター（Made with Streamlit）を隠す */
+    footer {
+        visibility: hidden;
+        height: 0%;
+        position: fixed;
+    }
+    
+    /* 4. 上部の装飾バー（虹色の線など）を隠す */
+    [data-testid="stDecoration"] {
+        visibility: hidden;
+        height: 0%;
+        position: fixed;
+    }
+
+    /* 5. "Deploy" や "Manage app" ボタンを隠す */
+    .stDeployButton {
+        display: none;
+    }
     </style>
     """
 st.markdown(hide_menu_style, unsafe_allow_html=True)
@@ -172,5 +199,6 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
+
 
 
