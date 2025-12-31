@@ -30,8 +30,8 @@ def clean_date(date_val):
         return pd.NaT
 
 # --- 1. データ読み込み (Googleスプレッドシートから) ---
-# あなたが発行した公開用URL
-csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkQ35h2CJlsC9bdxHhhE--96pc9HH9diF0NNPQwY1FLMJNa2CuyWWe9EW3bryPE4EFIDn1-yHy_As2/pub?gid=0&single=true&output=csv"
+# 金庫から取り出す
+csv_url = st.secrets["csv_url"]
 
 try:
     # URLから直接データを読み込む
@@ -133,6 +133,7 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
+
 
 
 
