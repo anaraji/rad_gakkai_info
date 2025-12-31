@@ -110,13 +110,13 @@ else:
                 # 2. 専門ポイント (黄色/オレンジ) - G列
                 # 列が存在し、かつデータが入っている場合のみ表示
                 if "専門ポイントの有無" in df.columns:
-                    point_val = row["専門ポイントの有無"]
+                    point_val = row["専門ポイント"]
                     if pd.notna(point_val) and str(point_val).strip() != "":
                         badges_html += f"<span style='background-color:#fff9c4; color:#f57f17; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px; font-weight:bold;'>★ {point_val}</span>"
 
                 # 3. ハイブリッド開催 (紫) - H列
                 if "ハイブリッド開催の有無" in df.columns:
-                    hybrid_val = row["ハイブリッド開催の有無"]
+                    hybrid_val = row["ハイブリッド開催"]
                     if pd.notna(hybrid_val) and str(hybrid_val).strip() != "":
                         badges_html += f"<span style='background-color:#f3e5f5; color:#7b1fa2; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px;'>📶 {hybrid_val}</span>"
 
@@ -133,3 +133,4 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
+
