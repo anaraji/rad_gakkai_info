@@ -95,7 +95,10 @@ filtered_df = filtered_df.sort_values("開催日")
 # --- 4. メイン表示 ---
 st.title("🏥 診療放射線技師向け 学会・研究会情報")
 st.caption(f"最終更新: {today.strftime('%Y/%m/%d %H:%M')}")
-st.markdown("データの修正・追加は[こちらのスプレッドシート](https://docs.google.com/spreadsheets/d/1d-mYFO8fCD1c4P8RtiYAVwBem_h7iijpIGFhGxzaf14/edit?gid=0#gid=0)からお願いします。") # ※必要なら編集用URLを貼る
+
+# 金庫(secrets)から取り出す
+edit_url = st.secrets["edit_url"]
+st.markdown(f"データの修正・追加は[こちらのスプレッドシート]({edit_url})からお願いします。")
 
 st.info(f"検索結果: {len(filtered_df)} 件")
 
@@ -130,6 +133,7 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
+
 
 
 
