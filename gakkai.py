@@ -6,6 +6,37 @@ import re
 # ページ設定
 st.set_page_config(page_title="放射線技師 学会・研究会DB", layout="wide")
 
+# --- 【追加】簡易パスワード認証機能 ---
+def check_password():
+    """パスワード認証を行う関数"""
+    # セッション状態にパスワード認証済みフラグがない場合は初期化
+    if "password_correct" not in st.session_state:
+        st.session_state.password_correct = False
+
+    # 認証済みなら何もしない（メイン処理へ進む）
+    if st.session_state.password_correct:
+        return True
+
+    # パスワード入力フォームを表示
+    st.header("🔒 認証")
+    password_input = st.text_input("合言葉を入力してください", type="password")
+    
+    if st.button("ログイン"):
+        # Secretsに保存したパスワードと照合
+        if password_input == st.secrets["app_password"]:
+            st.session_state.password_correct = True
+            st.rerun() # 画面を再読み込みしてメイン表示へ
+        else:
+            st.error("合言葉が違います")
+            
+    return False
+
+# 認証チェック：通らなければここでプログラムを強制終了(stop)する
+if not check_password():
+    st.stop()
+
+# --- ここから下はいつものメイン処理 ---
+# ... (clean_date関数やデータ読み込み処理など、既存のコードが続きます)
 # --- 関数: 日付のクリーニング処理 ---
 def clean_date(date_val):
     if pd.isna(date_val):
@@ -130,3 +161,4 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
+
