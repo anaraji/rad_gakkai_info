@@ -32,7 +32,7 @@ try:
     
     # 日付変換
     df["開催日"] = df["開催日"].apply(clean_date)
-    df = df.dropna(subset=["開催日"]) # 日付がないものは除外
+    df = df.dropna(subset=["開催日"])
 
     # モダリティのリスト化
     df["モダリティ"] = df["モダリティ"].fillna("").astype(str).apply(
@@ -77,7 +77,6 @@ filtered_df = filtered_df.sort_values("開催日")
 st.title("🏥 診療放射線技師向け 学会・研究会情報")
 st.caption(f"最終更新: {today.strftime('%Y/%m/%d %H:%M')}")
 
-# 編集用URLもSecretsから取得
 try:
     edit_url = st.secrets["edit_url"]
     st.markdown(f"データの修正・追加は[こちらのスプレッドシート]({edit_url})からお願いします。")
@@ -100,27 +99,25 @@ else:
                 st.subheader(f"📅 {date_str} | {row['学会名']}")
                 st.caption(f"📍 {row['地域']} ({row['都道府県']})")
                 
-                # バッジ表示用のHTML作成
+                # バッジ表示
                 badges_html = ""
                 
                 # 1. モダリティ (水色)
                 for mod in row["モダリティ"]:
                     badges_html += f"<span style='background-color:#e0f7fa; color:#006064; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px;'>{mod}</span>"
                 
-                # 2. 専門ポイント (黄色/オレンジ) - G列
-                # 列が存在し、かつデータが入っている場合のみ表示
-                if "専門ポイントの有無" in df.columns:
+                # 2. 専門ポイント (黄色/オレンジ) - G列「専門ポイント」
+                if "専門ポイント" in df.columns:
                     point_val = row["専門ポイント"]
                     if pd.notna(point_val) and str(point_val).strip() != "":
                         badges_html += f"<span style='background-color:#fff9c4; color:#f57f17; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px; font-weight:bold;'>★ {point_val}</span>"
 
-                # 3. ハイブリッド開催 (紫) - H列
-                if "ハイブリッド開催の有無" in df.columns:
+                # 3. ハイブリッド開催 (紫) - H列「ハイブリッド開催」
+                if "ハイブリッド開催" in df.columns:
                     hybrid_val = row["ハイブリッド開催"]
                     if pd.notna(hybrid_val) and str(hybrid_val).strip() != "":
                         badges_html += f"<span style='background-color:#f3e5f5; color:#7b1fa2; padding:4px 8px; border-radius:12px; margin-right:5px; font-size:0.8em; display:inline-block; margin-bottom:4px;'>📶 {hybrid_val}</span>"
 
-                # HTMLを表示
                 st.markdown(badges_html, unsafe_allow_html=True)
                 
             with col2:
@@ -133,4 +130,3 @@ else:
                     st.button("URLなし", disabled=True)
 
 st.markdown("---")
-
