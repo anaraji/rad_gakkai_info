@@ -15,72 +15,41 @@ def clean_date(date_val):
         return pd.NaT
     
     text = str(date_val)
-    
-    # 1. あらゆる種類の「横棒」や「波線」を、普通の半角ハイフン「-」に統一する
-    # \u2010-\u2015 はダッシュ類の範囲、\u2212はマイナス、全角チルダなど
+    # 1. あらゆる種類の「横棒」や「波線」を、普通の半角ハイフン「-」に統一
     text = re.sub(r'[~〜\u2010-\u2015\u2212ー−]', '-', text)
-    
     # 2. 統一したハイフンで分割し、最初の部分（開始日）だけ取る
     text = text.split('-')[0]
-    
     # 3. 日本語の「年」「月」をスラッシュに、「日」を削除
     text = text.replace('年', '/').replace('月', '/').replace('日', '')
-    
-    # 4. 目に見えない「謎の空白(nbsp)」や普通の空白を削除
+    # 4. 余計な空白を削除
     text = text.strip()
     
     try:
-        # 変換を試みる
         return pd.to_datetime(text)
     except:
-        # それでもダメなら、デバッグ用に元の文字列を表示して確認できるようにする
-        # (ここではNaTを返すが、後でエラーリストを表示する)
         return pd.NaT
 
-# --- 1. データ読み込み ---
-try:
-    # まず Windowsのエクセル形式 (cp932) で読み込み
-    try:
-        df = pd.read_csv('gakkai_data.csv', encoding='cp932')
-    except UnicodeDecodeError:
-        df = pd.read_csv('gakkai_data.csv', encoding='utf-8')
+# --- 1. データ読み込み (Googleスプレッドシートから) ---
+# あなたが発行した公開用URL
+csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkQ35h2CJlsC9bdxHhhE--96pc9HH9diF0NNPQwY1FLMJNa2CuyWWe9EW3bryPE4EFIDn1-yHy_As2/pub?gid=0&single=true&output=csv"
 
-    # 列が1つしかない場合の救済措置（A列に全部入っている場合）
-    if len(df.columns) == 1:
-        col_name = df.columns[0]
-        new_header = col_name.split(',')
-        df = df[col_name].str.split(',', expand=True)
-        if len(new_header) == len(df.columns):
-            df.columns = new_header
-        else:
-            # カラム数が合わない場合は固定割り当て
-            df.columns = ["学会名", "開催日", "地域", "都道府県", "モダリティ", "URL"]
+try:
+    # URLから直接データを読み込む
+    df = pd.read_csv(csv_url)
 
     # --- データの加工 ---
     
-    # 元のデータを残しておく（デバッグ用）
-    df["元の開催日"] = df["開催日"]
-
     # 日付変換（強化版）
     df["開催日"] = df["開催日"].apply(clean_date)
     
     # 日付変換に失敗した行（NaT）があるかチェック
     failed_rows = df[df["開催日"].isna()]
-    
     if not failed_rows.empty:
-        # 画面の上部にエラー警告を出す
-        st.error(f"⚠️ {len(failed_rows)} 件のデータの日付が読み込めませんでした。")
-        
-        # 読み込めなかったデータを表で表示（ここを見て原因を探る）
-        with st.expander("クリックして読み込めなかったデータを確認する"):
-            st.dataframe(failed_rows[["学会名", "元の開催日"]])
-            st.caption("※「元の開催日」に含まれる記号が原因です。Excelで修正してください。")
-            
-        # 日付がないデータは除外する
+        st.toast(f"⚠️ {len(failed_rows)} 件の日付が読み込めませんでした（スプレッドシートを確認してください）", icon="⚠️")
         df = df.dropna(subset=["開催日"])
 
-
     # モダリティのリスト化処理
+    # スプレッドシートだと勝手に数値になったりするので文字列に変換してから処理
     df["モダリティ"] = df["モダリティ"].fillna("").astype(str).apply(
         lambda x: x.replace("、", ",").replace('"', '').split(",")
     )
@@ -125,7 +94,8 @@ filtered_df = filtered_df.sort_values("開催日")
 
 # --- 4. メイン表示 ---
 st.title("🏥 診療放射線技師向け 学会・研究会情報")
-st.caption(f"最終更新: {today.strftime('%Y/%m/%d')}")
+st.caption(f"最終更新: {today.strftime('%Y/%m/%d %H:%M')}")
+st.markdown("データの修正・追加は[こちらのスプレッドシート](https://docs.google.com/spreadsheets/d/1_YOUR_EDIT_URL_HERE)からお願いします。") # ※必要なら編集用URLを貼る
 
 st.info(f"検索結果: {len(filtered_df)} 件")
 
